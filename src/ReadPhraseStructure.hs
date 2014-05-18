@@ -13,10 +13,13 @@ getPOS (Morpheme s0 s1 s2 s3 s4 s5 s6) = s3
 data Chunk = Chunk ChunkID ModifieeID [Morpheme] deriving (Show)
 type KyotoCorpusLine = String
 
+-- 京大コーパスの形態素の行をMorphemeに変換する
 makeMorpheme :: KyotoCorpusLine -> Morpheme
 makeMorpheme l = Morpheme (lst !! 0) (lst !! 1) (lst !! 2) (lst !! 3) (lst !! 4) (lst !! 5) (lst !! 6)
   where lst = words l
 
+-- 1つの文についての京大コーパスの行をチャンクのリストに変換する
+-- EOSは引数から除外してある必要がある
 makeChunkList :: [KyotoCorpusLine] -> [Chunk]
 makeChunkList [] = []
 makeChunkList (x:xs) | "*" `isPrefixOf` x = (Chunk chunkID modifieeID (map makeMorpheme mrphs)) : (makeChunkList others)
