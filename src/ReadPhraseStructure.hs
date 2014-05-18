@@ -14,9 +14,9 @@ makeMorpheme :: KyotoCorpusLine -> Morpheme
 makeMorpheme l = Morpheme (lst !! 0) (lst !! 1) (lst !! 2) (lst !! 3) (lst !! 4) (lst !! 5) (lst !! 6)
   where lst = words l
 
-makeChunkTree :: [KyotoCorpusLine] -> [Chunk]
-makeChunkTree [] = []
-makeChunkTree (x:xs) | "*" `isPrefixOf` x = (Chunk chunkID modifieeID (map makeMorpheme mrphs)) : (makeChunkTree others)
+makeChunkList :: [KyotoCorpusLine] -> [Chunk]
+makeChunkList [] = []
+makeChunkList (x:xs) | "*" `isPrefixOf` x = (Chunk chunkID modifieeID (map makeMorpheme mrphs)) : (makeChunkList others)
                      | otherwise          = [] -- 起こりえない
   where wordLst = words x
         chunkID :: Int
@@ -30,6 +30,6 @@ main = do
   f' <- splitOn "EOS\n" <$> getContents
   let f = map lines f'
       s1 = f !! 0
-      chunkTrees = map makeChunkTree f
+      chunkTrees = map makeChunkList f
       chunk = chunkTrees !! 0
   mapM_ print chunk
