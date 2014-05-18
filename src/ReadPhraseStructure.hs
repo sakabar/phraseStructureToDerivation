@@ -35,6 +35,7 @@ makeChunkList (x:xs) | "*" `isPrefixOf` x = (Chunk chunkID modifieeID (map makeM
 
 data Tree a = Node a | Leaf (Tree a) (Tree a) deriving (Show)
 data ChunkTree = ChunkTree ChunkID ModifieeID (Tree Morpheme) deriving (Show)
+getModifieeID (ChunkTree cID mID t) = mID
 
 convertChunkToTree :: Chunk -> ChunkTree
 convertChunkToTree (Chunk chunkID modifieeID []) = undefined -- 起こりえない
@@ -56,10 +57,42 @@ concatTreeListL :: [Tree a] -> Tree a
 concatTreeListL [] = undefined -- 想定してない
 concatTreeListL (x:xs) = foldl' (\ans tr -> Leaf ans tr) x xs
 
+
+-- 末尾の形態素にかかっていない形態素をグループにまとめる
+-- [3D 2D 3D -1D] -> [[3D], [2D, 3D], [-1D]]
+groupTree :: [ChunkTree] -> [ChunkTree] -> [[ChunkTree]]
+groupTree treeLst [] = []
+groupTree treeLst lst@(x@(ChunkTree chunkID modifieeID tree):xs)
+  | (modifieeID == (-1) && modifieeID == (length treeLst -1)) = [x] : groupTree treeLst xs
+  | otherwise = s1 : groupTree treeLst s2
+  where hoge = takeWhile (\chTree -> (getModifieeID chTree) /= (length lst)-1) lst
+        bar  = dropWhile (\chTree -> (getModifieeID chTree) /= (length lst)-1) lst
+        s1   = hoge ++ [head bar]
+        s2   = tail bar
+
+makeTreeR :: [a] -> Tree a
+makeTreeR [] = undefined -- 想定してない
+makeTreeR lst = foldr (\n ans -> Leaf (Node n) ans) (Node $ last lst) (init lst)
+
+makeTreeL :: [a] -> Tree a
+makeTreeL [] = undefined -- 想定してない
+makeTreeL (x:xs) = foldl' (\ans n -> Leaf ans (Node n)) (Node x) xs
+
+
 main = do
   f' <- splitOn "EOS\n" <$> getContents
   let f = map lines f'
       stringChunkList = map makeChunkList f
       chunkList = stringChunkList !! 0
-      tree = (map convertChunkToTree chunkList)
-  mapM_ print tree
+      chunkTree = (map convertChunkToTree chunkList)
+      ans = makeTreeR $ map makeTreeL $ (groupTree chunkTree chunkTree)
+  print ans
+
+
+
+-- outputMTree :: Tree Morpheme -> IO()
+-- outputMTree
+
+-- outputCTree :: Tree ChunkTree -> IO()
+-- outputCTree (Node (ChunkTree a b mrph)) = mapM
+-- outputCTree (Leaf a b) = (outputTree a) >> (outputTree b)
