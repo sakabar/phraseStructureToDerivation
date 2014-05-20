@@ -1,3 +1,3 @@
 #!/bin/zsh
 
-grep -v "^#" data/hoge.KNP | ./dist/build/readPhraseStructure/readPhraseStructure
+grep -v "^#" | ./dist/build/readPhraseStructure/readPhraseStructure
