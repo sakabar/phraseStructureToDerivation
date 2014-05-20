@@ -80,26 +80,10 @@ main = do
       chunkList = stringChunkList !! 0
       chunkTree = (map convertChunkToTree chunkList)
       ans = foldr1 (\t ans -> Leaf t ans) $ map makeTreeL $ (groupTree chunkTree)
-  outputCTreeInd ans
-  putStrLn ""
+  -- outputCTreeInd ans
+  -- putStrLn ""
 
-  -- outputAsDerivation ans
+  outputAsDerivation ans
 
 
-
--- f :: Tree ChunkTree -> IO()
--- f tr = do
---   let lvCt = (getLVandTextPair tr)
---   let maxDepth = maximum $ map (\(t,d) -> d) lvCt
---       change d [] = pack ""
---       change d (x@(t',d'):xs) | d' == d   = T.append t' (change d xs)
---                               | d' == d+1 = T.append (pack $ take (getMultiByteLength t') (repeat '-')) (change d xs)
---                               | otherwise = T.append (pack $ take (getMultiByteLength t') (repeat ' ')) (change d xs)
-
---   mapM_ Tio.putStrLn $ map (\d -> change d lvCt) (reverse [0..maxDepth])
-
--- getMultiByteLength :: Text -> Int
--- getMultiByteLength t | T.length t == 0 = 0
---             | T.head t == ' ' = 1 + getMultiByteLength (T.tail t)
---             | otherwise = 2 + getMultiByteLength (T.tail t)
 
