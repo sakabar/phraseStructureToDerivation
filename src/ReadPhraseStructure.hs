@@ -5,17 +5,9 @@ import Data.Text as T (Text, pack, unpack)
 import qualified Data.Text as T
 import qualified Data.Text.IO as Tio
 
-type ChunkID = Int
-type ModifieeID = Int
--- 例: あたり あたり あたる 動詞 * 子音動詞ラ行 基本連用形
-data Morpheme = Morpheme Text Text Text Text Text Text Text deriving (Show)
-getPOS :: Morpheme -> Text
-getPOS (Morpheme _ _ _ s3 _ _ _) = s3
+import Utils
+import OutputTree
 
-getMrph :: Morpheme -> Text
-getMrph (Morpheme s0 _ _ _ _ _ _) = s0
-
-data Chunk = Chunk ChunkID ModifieeID [Morpheme] deriving (Show)
 type KyotoCorpusLine = Text
 
 -- 京大コーパスの形態素の行をMorphemeに変換する
@@ -37,11 +29,6 @@ makeChunkList (x:xs) | T.isPrefixOf (pack "*") x = (Chunk chunkID modifieeID (ma
         modifieeID = read $ takeWhile (\ch -> ch /= 'D' && ch /= 'P' && ch /= 'I' && ch /= 'A') (unpack (wordLst !! 2)) :: Int
         mrphs  = takeWhile (\l -> not $ T.isPrefixOf (pack "*") l) xs
         others = dropWhile (\l -> not $ T.isPrefixOf (pack "*") l) xs
-
-
-data Tree a = Node a | Leaf (Tree a) (Tree a) deriving (Show)
-data ChunkTree = ChunkTree ChunkID ModifieeID (Tree Morpheme) deriving (Show)
-getModifieeID (ChunkTree cID mID t) = mID
 
 convertChunkToTree :: Chunk -> ChunkTree
 convertChunkToTree (Chunk chunkID modifieeID []) = undefined -- 起こりえない
@@ -98,37 +85,11 @@ main = do
 
   -- outputAsDerivation ans
 
--- チャンクツリーを出力する
-outputCTree :: Tree ChunkTree -> IO()
-outputCTree (Node (ChunkTree _ _ mrphTree)) = do
-  putStr "(" >> Tio.putStr (showMTree mrphTree) >> putStr ")"
-outputCTree (Leaf a b) = do
-  putStr "(L " >> (outputCTree a) >> (outputCTree b) >> putStr ")"
-
-
--- レベルを考慮してインデントして出力
-outputCTreeInd :: Tree ChunkTree -> IO()
-outputCTreeInd t = outputCTreeInd' 0 t
-  where
-    outputCTreeInd' :: Int -> Tree ChunkTree -> IO()
-    outputCTreeInd' d (Node (ChunkTree _ _ mrphTree)) = do
-      putStr $ take d (repeat ' ')
-      Tio.putStr (showMTree mrphTree) >> putStrLn ""
-    outputCTreeInd' d (Leaf a b) = do
-      (putStr $ take d (repeat ' ')) >> putStrLn "(L"
-      outputCTreeInd' (d+1) a
-      outputCTreeInd' (d+1) b
-      (putStr $ take d (repeat ' ')) >> putStrLn ")"
-
-
-showMTree :: Tree Morpheme -> Text
-showMTree (Node mrph) = (getMrph mrph)
-showMTree (Leaf t1 t2) = foldl1 T.append [(showMTree t1), (pack " "), (showMTree t2)]
 
 
 -- f :: Tree ChunkTree -> IO()
 -- f tr = do
---   let lvCt = (lvCTree tr)
+--   let lvCt = (getLVandTextPair tr)
 --   let maxDepth = maximum $ map (\(t,d) -> d) lvCt
 --       change d [] = pack ""
 --       change d (x@(t',d'):xs) | d' == d   = T.append t' (change d xs)
@@ -142,35 +103,3 @@ showMTree (Leaf t1 t2) = foldl1 T.append [(showMTree t1), (pack " "), (showMTree
 --             | T.head t == ' ' = 1 + getMultiByteLength (T.tail t)
 --             | otherwise = 2 + getMultiByteLength (T.tail t)
 
--- -- レベルがdと一致している文字列だけ残して他は空白に
--- changeToSpace :: Int -> [(Text, Int)] -> [Text]
--- changeToSpace d lst = map (\(t',d') -> if d == d' then t' else pack (take (getMultiByteLength t') (repeat ' '))) lst
-
--- -- レベルがd以上の文字列を----にして残して他は空白に
--- changeToHyphen :: Int -> [(Text, Int)] -> [Text]
--- changeToHyphen d lst = map (\(t',d') -> if d' >= d then pack (take (getMultiByteLength t') (repeat '-')) else pack (take (getMultiByteLength t') (repeat ' '))) lst
-
--- -- レベルdとレベルe(なんでもよい)の間は空ける
--- -- そのレベルのチャンクの後に空白を入れるのかどうかのboolのリストを返す
--- getBoolArray :: Int -> [(Text, Int)] -> [Bool]
--- getBoolArray d lst = map (\(t', d') -> d == d') lst
-
--- output_LvDchunks :: Int -> [(Text, Int)] -> IO()
--- output_LvDchunks d lvCt = do
---   Tio.putStrLn $ T.concat $ changeToSpace d lvCt
---   Tio.putStrLn $ T.concat $ zipWith (\bool text -> if bool then T.append text (pack " ") else text) (getBoolArray d lvCt) $ changeToHyphen d lvCt
-
--- -- CCGの導出木のような形式で出力する
--- outputAsDerivation :: Tree ChunkTree -> IO()
--- outputAsDerivation tr = do
---   let lvCt = lvCTree tr
---       maxDepth = maximum $ map (\(t,d) -> d) lvCt
-
---   mapM_ (\d -> output_LvDchunks d lvCt) (reverse [0..maxDepth])
-
--- lvCTree :: Tree ChunkTree -> [(Text, Int)]
--- lvCTree t = lvCTree' 0 t
---   where
---     lvCTree' :: Int -> Tree ChunkTree -> [(Text, Int)]
---     lvCTree' d (Node (ChunkTree _ _ mrphTree)) = [(showMTree mrphTree, d)]
---     lvCTree' d (Leaf a b) = (lvCTree' (d+1) a) ++ (lvCTree' (d+1) b)
