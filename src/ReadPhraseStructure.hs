@@ -3,7 +3,6 @@ import Data.List
 import Data.List.Split
 import Data.Text as T (Text, pack, unpack)
 import qualified Data.Text as T
-import qualified Data.Text.IO as Tio
 
 import Utils
 import OutputTree
@@ -31,7 +30,7 @@ makeChunkList (x:xs) | T.isPrefixOf (pack "*") x = (Chunk chunkID modifieeID (ma
         others = dropWhile (\l -> not $ T.isPrefixOf (pack "*") l) xs
 
 convertChunkToTree :: Chunk -> ChunkTree
-convertChunkToTree (Chunk chunkID modifieeID []) = undefined -- 起こりえない
+convertChunkToTree (Chunk _ _ []) = undefined -- 起こりえない
 convertChunkToTree (Chunk chunkID modifieeID mrphs@(x:xs))
   | any (\mrph -> getPOS mrph == (pack "動詞")) mrphs = ChunkTree chunkID modifieeID morphemeTree
   | otherwise = ChunkTree chunkID modifieeID ansTree
@@ -60,12 +59,12 @@ groupTree lst | length lst >= 1 = groupTree' (length lst) lst
     groupTree' :: Int -> [ChunkTree] -> [[ChunkTree]]
     groupTree' _ [] = []
     groupTree' _ [x] = [[x]]
-    groupTree' len lst@(x@(ChunkTree chunkID modifieeID tree):xs)
+    groupTree' len lst'@(x@(ChunkTree _ modifieeID _):xs)
       | (modifieeID == (-1) && modifieeID == (len-1)) = [x] : groupTree' len xs
       | otherwise = s1 : groupTree' len s2
         where
-          hoge = takeWhile (\chTree -> (getModifieeID chTree) /= (len-1)) lst
-          bar  = dropWhile (\chTree -> (getModifieeID chTree) /= (len-1)) lst
+          hoge = takeWhile (\chTree -> (getModifieeID chTree) /= (len-1)) lst'
+          bar  = dropWhile (\chTree -> (getModifieeID chTree) /= (len-1)) lst'
           s1   = if (null bar) then hoge else hoge ++ [head bar]
           s2   = if (null bar) then []   else tail bar
 
@@ -73,13 +72,14 @@ makeTreeL :: [a] -> Tree a
 makeTreeL [] = undefined -- 想定してない
 makeTreeL (x:xs) = foldl' (\ans n -> Leaf ans (Node n)) (Node x) xs
 
+main :: IO()
 main = do
   f' <- splitOn "EOS\n" <$> getContents
   let f = map lines f'
       stringChunkList = map (\cpslines -> makeChunkList $ map pack cpslines) f
       chunkList = stringChunkList !! 0
       chunkTree = (map convertChunkToTree chunkList)
-      ans = foldr1 (\t ans -> Leaf t ans) $ map makeTreeL $ (groupTree chunkTree)
+      ans = foldr1 (\t ans' -> Leaf t ans') $ map makeTreeL $ (groupTree chunkTree)
   -- outputCTreeInd ans
   -- putStrLn ""
 

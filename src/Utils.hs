@@ -2,8 +2,9 @@ module Utils
 
 where
 
-import Data.Text as T (Text, pack, unpack)
-import qualified Data.Text as T
+-- import Data.Text as T (Text, pack, unpack)
+-- import qualified Data.Text as T
+import Data.Text as T (Text)
 
 
 data Tree a = Node a | Leaf (Tree a) (Tree a) deriving (Show)
@@ -23,4 +24,4 @@ type ChunkID = Int
 type ModifieeID = Int
 
 data ChunkTree = ChunkTree ChunkID ModifieeID (Tree Morpheme) deriving (Show)
-getModifieeID (ChunkTree cID mID t) = mID
+getModifieeID (ChunkTree _ mID _) = mID
